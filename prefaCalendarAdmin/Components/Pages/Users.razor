@@ -1,0 +1,108 @@
+@page "/users"
+@using prefaCalendarAdmin.Models
+@using prefaCalendarAdmin.Services
+@inject IUserService UserService
+
+<h3>Gestion des utilisateurs</h3>
+
+@if (users == null)
+{
+    <p><em>Chargement...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Email vérifié</th>
+                <th>Approuvé</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.Firstname</td>
+                    <td>@user.Lastname</td>
+                    <td>@user.Email</td>
+                    <td>@(user.EmailVerifiedAt != null ? "Oui" : "Non")</td>
+                    <td>@(user.Approved ? "Oui" : "Non")</td>
+                    <td>
+                        @if (!user.Approved)
+                        {
+                            <button class="btn btn-success" @onclick="() => ApproveUser(user.Id)">Approuver</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-warning" @onclick="() => RevokeUser(user.Id)">Révoquer</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<User>? users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            users = await UserService.GetAllUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des utilisateurs: {ex.Message}");
+        }
+    }
+
+    private async Task ApproveUser(int userId)
+    {
+        try
+        {
+            bool success = await UserService.UpdateUserApprovalStatusAsync(userId, true);
+            if (success)
+            {
+                var user = users?.FirstOrDefault(u => u.Id == userId);
+                if (user != null)
+                {
+                    user.Approved = true;
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de l'approbation de l'utilisateur: {ex.Message}");
+        }
+    }
+
+    private async Task RevokeUser(int userId)
+    {
+        try
+        {
+            bool success = await UserService.UpdateUserApprovalStatusAsync(userId, false);
+            if (success)
+            {
+                var user = users?.FirstOrDefault(u => u.Id == userId);
+                if (user != null)
+                {
+                    user.Approved = false;
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la révocation de l'utilisateur: {ex.Message}");
+        }
+    }
+}

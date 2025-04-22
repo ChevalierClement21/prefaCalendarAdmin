@@ -1,0 +1,157 @@
+@page "/administrators"
+@using prefaCalendarAdmin.Models
+@using prefaCalendarAdmin.Services
+@inject IUserService UserService
+
+<h3>Gestion des administrateurs</h3>
+
+@if (usersWithRoles == null)
+{
+    <p><em>Chargement...</em></p>
+}
+else
+{
+    <div class="mb-4">
+        <h4>Liste des administrateurs actuels</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Prénom</th>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in usersWithRoles.Where(u => u.IsAdmin))
+                {
+                    <tr>
+                        <td>@user.Id</td>
+                        <td>@user.Firstname</td>
+                        <td>@user.Lastname</td>
+                        <td>@user.Email</td>
+                        <td>
+                            <button class="btn btn-danger" @onclick="() => RemoveAdmin(user.Id)">
+                                Retirer les droits admin
+                            </button>
+                        </td>
+                    </tr>
+                }
+                @if (!usersWithRoles.Any(u => u.IsAdmin))
+                {
+                    <tr>
+                        <td colspan="5">Aucun administrateur trouvé</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div>
+        <h4>Ajouter un nouvel administrateur</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Prénom</th>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in usersWithRoles.Where(u => !u.IsAdmin))
+                {
+                    <tr>
+                        <td>@user.Id</td>
+                        <td>@user.Firstname</td>
+                        <td>@user.Lastname</td>
+                        <td>@user.Email</td>
+                        <td>
+                            <button class="btn btn-success" @onclick="() => MakeAdmin(user.Id)" 
+                                    disabled="@(!user.Approved)">
+                                @if (!user.Approved)
+                                {
+                                    <span>Utilisateur non approuvé</span>
+                                }
+                                else
+                                {
+                                    <span>Faire administrateur</span>
+                                }
+                            </button>
+                        </td>
+                    </tr>
+                }
+                @if (!usersWithRoles.Any(u => !u.IsAdmin))
+                {
+                    <tr>
+                        <td colspan="5">Tous les utilisateurs sont déjà administrateurs</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<UserWithRoles>? usersWithRoles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            usersWithRoles = await UserService.GetAllUsersWithRolesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des utilisateurs: {ex.Message}");
+        }
+    }
+
+    private async Task MakeAdmin(int userId)
+    {
+        try
+        {
+            Console.WriteLine($"Tentative d'attribution du rôle admin à l'utilisateur ID: {userId}");
+            bool success = await UserService.SetAdminStatusAsync(userId, true);
+            Console.WriteLine($"Résultat de l'attribution: {success}");
+            
+            if (success)
+            {
+                Console.WriteLine("Rechargement de la liste des utilisateurs");
+                await LoadUsers();
+            }
+            else
+            {
+                Console.WriteLine("Échec de l'attribution du rôle admin");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de l'ajout des droits admin: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+    }
+
+    private async Task RemoveAdmin(int userId)
+    {
+        try
+        {
+            bool success = await UserService.SetAdminStatusAsync(userId, false);
+            if (success)
+            {
+                await LoadUsers();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du retrait des droits admin: {ex.Message}");
+        }
+    }
+}

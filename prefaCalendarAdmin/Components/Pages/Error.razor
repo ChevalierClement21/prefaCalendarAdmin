@@ -1,0 +1,29 @@
+@page "/Error"
+
+<div class="container">
+    <h1 class="text-danger">Erreur</h1>
+    <h2 class="text-danger">Une erreur s'est produite pendant le traitement de votre demande.</h2>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            <p>
+                <strong>Message d'erreur:</strong> <span>@ErrorMessage</span>
+            </p>
+        </div>
+    }
+
+    <h3>Mode développement</h3>
+    <p>
+        En mode développement (environnement de développement), des informations détaillées sur l'erreur sont affichées dans la console du navigateur.
+    </p>
+
+    <p>
+        <a href="/">Retour à la page d'accueil</a>
+    </p>
+</div>
+
+@code {
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+}
