@@ -3,7 +3,8 @@
 @using prefaCalendarAdmin.Services
 @inject IUserService UserService
 
-<h3>Gestion des administrateurs</h3>
+<AuthorizeView>
+    <h3>Gestion des administrateurs</h3>
 
 @if (usersWithRoles == null)
 {
@@ -155,3 +156,4 @@ else
         }
     }
 }
+</AuthorizeView>

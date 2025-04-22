@@ -1,13 +1,29 @@
 ﻿@inherits LayoutComponentBase
 
+@using prefaCalendarAdmin.Services
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    @if (isAuthenticated)
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row px-4 d-flex justify-content-between align-items-center">
+            <div>
+                <span>PrefaCalendar Admin</span>
+            </div>
+            <div>
+                @if (isAuthenticated)
+                {
+                    <span class="me-3">@currentUserName</span>
+                    <button class="btn btn-outline-danger btn-sm" @onclick="Logout">Déconnexion</button>
+                }
+            </div>
         </div>
 
         <article class="content px-4">
@@ -15,3 +31,49 @@
         </article>
     </main>
 </div>
+
+@code {
+    private bool isAuthenticated = false;
+    private string currentUserName = string.Empty;
+    private Models.UserWithRoles? currentUser;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckAuthentication();
+    }
+    
+    private async Task CheckAuthentication()
+    {
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        
+        if (isAuthenticated)
+        {
+            currentUser = await AuthService.GetCurrentUserAsync();
+            if (currentUser != null)
+            {
+                currentUserName = $"{currentUser.Firstname} {currentUser.Lastname}";
+                
+                // Vérifier si l'utilisateur est admin
+                bool isAdmin = await AuthService.IsAdminAsync();
+                if (!isAdmin)
+                {
+                    // Si l'utilisateur n'est pas admin, le déconnecter et rediriger
+                    await Logout();
+                }
+            }
+        }
+        else if (!NavigationManager.Uri.Contains("/login"))
+        {
+            // Rediriger vers la page de connexion si l'utilisateur n'est pas authentifié
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
+    
+    private async Task Logout()
+    {
+        await AuthService.Logout();
+        isAuthenticated = false;
+        currentUserName = string.Empty;
+        NavigationManager.NavigateTo("/login");
+    }
+}

@@ -30,6 +30,7 @@ public static class MauiProgram
         // Enregistrement des services
         builder.Services.AddScoped<IRoleService, RoleService>();
         builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
