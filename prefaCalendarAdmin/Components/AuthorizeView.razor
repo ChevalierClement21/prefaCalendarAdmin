@@ -1,0 +1,59 @@
+@using prefaCalendarAdmin.Services
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+@if (_authorized)
+{
+    @ChildContent
+}
+else if (_checking)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    private bool _authorized;
+    private bool _checking = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckAuthorization();
+    }
+
+    private async Task CheckAuthorization()
+    {
+        _checking = true;
+        _authorized = false;
+        
+        try
+        {
+            bool isAuthenticated = await AuthService.IsAuthenticatedAsync();
+            bool isAdmin = await AuthService.IsAdminAsync();
+            
+            _authorized = isAuthenticated && isAdmin;
+            
+            if (!_authorized && !NavigationManager.Uri.EndsWith("/login"))
+            {
+                NavigationManager.NavigateTo("/login", true);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur de vérification d'autorisation: {ex.Message}");
+            NavigationManager.NavigateTo("/login", true);
+            return;
+        }
+        finally
+        {
+            _checking = false;
+        }
+    }
+}

@@ -1,0 +1,19 @@
+@page "/"
+@inject NavigationManager NavigationManager
+@inject IAuthService AuthService
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        bool isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        
+        if (isAuthenticated)
+        {
+            NavigationManager.NavigateTo("/dashboard", true);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
+}

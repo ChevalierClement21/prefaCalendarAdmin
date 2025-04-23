@@ -1,0 +1,97 @@
+@page "/login"
+@using prefaCalendarAdmin.Models
+@using prefaCalendarAdmin.Services
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Connexion Administration</h3>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger">@errorMessage</div>
+                        }
+
+                        <div class="form-group mb-3">
+                            <label for="email">Email</label>
+                            <InputText id="email" class="form-control" @bind-Value="loginModel.Email" />
+                            <ValidationMessage For="@(() => loginModel.Email)" />
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="password">Mot de passe</label>
+                            <InputText id="password" class="form-control" type="password" @bind-Value="loginModel.Password" />
+                            <ValidationMessage For="@(() => loginModel.Password)" />
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span> Connexion en cours...</span>
+                                }
+                                else
+                                {
+                                    <span>Se connecter</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new LoginModel();
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Si l'utilisateur est déjà connecté, rediriger vers la page d'accueil
+        if (await AuthService.IsAuthenticatedAsync())
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+
+        try
+        {
+            bool result = await AuthService.LoginAsync(loginModel);
+
+            if (result)
+            {
+                NavigationManager.NavigateTo("/dashboard", true);
+            }
+            else
+            {
+                errorMessage = "Connexion échouée. Vérifiez vos identifiants ou vos permissions.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors de la connexion: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
