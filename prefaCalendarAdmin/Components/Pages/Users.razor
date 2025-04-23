@@ -6,7 +6,7 @@
 <AuthorizeView>
     <h3>Gestion des utilisateurs</h3>
 
-@if (users == null)
+@if (usersWithRoles == null)
 {
     <p><em>Chargement...</em></p>
 }
@@ -21,11 +21,12 @@ else
                 <th>Email</th>
                 <th>Email vérifié</th>
                 <th>Approuvé</th>
+                <th>Administrateur</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var user in users)
+            @foreach (var user in usersWithRoles)
             {
                 <tr>
                     <td>@user.Id</td>
@@ -34,6 +35,7 @@ else
                     <td>@user.Email</td>
                     <td>@(user.EmailVerifiedAt != null ? "Oui" : "Non")</td>
                     <td>@(user.Approved ? "Oui" : "Non")</td>
+                    <td>@(user.IsAdmin ? "Oui" : "Non")</td>
                     <td>
                         @if (!user.Approved)
                         {
@@ -43,6 +45,15 @@ else
                         {
                             <button class="btn btn-warning" @onclick="() => RevokeUser(user.Id)">Révoquer</button>
                         }
+                        
+                        @if (!user.IsAdmin)
+                        {
+                            <button class="btn btn-primary ml-2" @onclick="() => SetAdminStatus(user.Id, true)">Rendre admin</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-danger ml-2" @onclick="() => SetAdminStatus(user.Id, false)">Retirer admin</button>
+                        }
                     </td>
                 </tr>
             }
@@ -51,13 +62,13 @@ else
 }
 
 @code {
-    private List<User>? users;
+    private List<UserWithRoles>? usersWithRoles;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            users = await UserService.GetAllUsersAsync();
+            usersWithRoles = await UserService.GetAllUsersWithRolesAsync();
         }
         catch (Exception ex)
         {
@@ -72,7 +83,7 @@ else
             bool success = await UserService.UpdateUserApprovalStatusAsync(userId, true);
             if (success)
             {
-                var user = users?.FirstOrDefault(u => u.Id == userId);
+                var user = usersWithRoles?.FirstOrDefault(u => u.Id == userId);
                 if (user != null)
                 {
                     user.Approved = true;
@@ -93,7 +104,7 @@ else
             bool success = await UserService.UpdateUserApprovalStatusAsync(userId, false);
             if (success)
             {
-                var user = users?.FirstOrDefault(u => u.Id == userId);
+                var user = usersWithRoles?.FirstOrDefault(u => u.Id == userId);
                 if (user != null)
                 {
                     user.Approved = false;
@@ -104,6 +115,24 @@ else
         catch (Exception ex)
         {
             Console.WriteLine($"Erreur lors de la révocation de l'utilisateur: {ex.Message}");
+        }
+    }
+    
+    private async Task SetAdminStatus(int userId, bool isAdmin)
+    {
+        try
+        {
+            bool success = await UserService.SetAdminStatusAsync(userId, isAdmin);
+            if (success)
+            {
+                // Recharger la liste complète pour mettre à jour les rôles correctement
+                usersWithRoles = await UserService.GetAllUsersWithRolesAsync();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la modification du statut d'administrateur: {ex.Message}");
         }
     }
 }
