@@ -31,6 +31,7 @@ public static class MauiProgram
         builder.Services.AddScoped<IRoleService, RoleService>();
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<ISessionService, SessionService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();

@@ -1,0 +1,209 @@
+@page "/sessions"
+@using prefaCalendarAdmin.Models.Session
+@using prefaCalendarAdmin.Services
+@inject ISessionService SessionService
+@inject NavigationManager NavigationManager
+<AuthorizeView>
+    <ChildContent>
+        <PageTitle>Gestion des Sessions</PageTitle>
+
+        <h1>Gestion des Sessions</h1>
+
+@if (loading)
+{
+    <p><em>Chargement...</em></p>
+}
+else
+{
+    @if (showCreateForm)
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Créer une nouvelle session</h3>
+            </div>
+            <div class="card-body">
+                <EditForm Model="newSession" OnValidSubmit="CreateSession">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nom de la session</label>
+                        <InputText id="name" @bind-Value="newSession.Name" class="form-control" />
+                        <ValidationMessage For="@(() => newSession.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="year" class="form-label">Année</label>
+                        <InputNumber id="year" @bind-Value="newSession.Year" class="form-control" />
+                        <ValidationMessage For="@(() => newSession.Year)" />
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <InputCheckbox id="isActive" @bind-Value="newSession.IsActive" class="form-check-input" />
+                        <label class="form-check-label" for="isActive">Session active</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CancelCreate">Annuler</button>
+                </EditForm>
+            </div>
+        </div>
+    }
+    else
+    {
+        <button class="btn btn-primary mb-4" @onclick="ShowCreateForm">Créer une nouvelle session</button>
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Année</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var session in sessions)
+            {
+                <tr>
+                    <td>@session.Id</td>
+                    <td>@session.Name</td>
+                    <td>@session.Year</td>
+                    <td>
+                        @if (session.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!session.IsActive)
+                        {
+                            <button class="btn btn-success btn-sm" @onclick="() => SetSessionActive(session.Id)">Activer</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<CalendarSession> sessions = new();
+    private bool loading = true;
+    private bool showCreateForm = false;
+    private CalendarSession newSession = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSessions();
+    }
+
+    private async Task LoadSessions()
+    {
+        loading = true;
+        try
+        {
+            Console.WriteLine("Chargement des sessions...");
+            sessions = await SessionService.GetAllSessionsAsync();
+            Console.WriteLine($"Sessions chargées: {sessions.Count}");
+            
+            // Afficher les informations sur chaque session
+            foreach (var session in sessions)
+            {
+                Console.WriteLine($"Session ID: {session.Id}, Nom: {session.Name}, Active: {session.IsActive}");
+            }
+            
+            // Vérifier s'il y a une session active
+            var activeSession = sessions.FirstOrDefault(s => s.IsActive);
+            if (activeSession != null)
+            {
+                Console.WriteLine($"Session active trouvée: ID: {activeSession.Id}, Nom: {activeSession.Name}");
+            }
+            else
+            {
+                Console.WriteLine("Aucune session active trouvée!");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des sessions: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+        loading = false;
+    }
+
+    private void ShowCreateForm()
+    {
+        showCreateForm = true;
+        newSession = new CalendarSession
+        {
+            Year = DateTime.Now.Year,
+            IsActive = false
+        };
+    }
+
+    private void CancelCreate()
+    {
+        showCreateForm = false;
+    }
+
+    private async Task CreateSession()
+    {
+        try
+        {
+            var result = await SessionService.CreateSessionAsync(newSession);
+            if (result)
+            {
+                showCreateForm = false;
+                await LoadSessions();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la création de la session: {ex.Message}");
+        }
+    }
+
+    private async Task SetSessionActive(int sessionId)
+    {
+        try
+        {
+            Console.WriteLine($"Début d'activation de la session ID: {sessionId}");
+            var result = await SessionService.SetSessionActiveAsync(sessionId);
+            Console.WriteLine($"Résultat de l'activation: {result}");
+            
+            if (result)
+            {
+                // Force un rafraîchissement complet
+                sessions = new List<CalendarSession>();
+                await Task.Delay(500); // Attendre que la base de données soit mise à jour
+                await LoadSessions();
+                Console.WriteLine($"Rechargement effectué. Nombre de sessions chargées: {sessions.Count}");
+                
+                // Vérifier si la session active a bien été définie
+                var activeSession = sessions.FirstOrDefault(s => s.IsActive);
+                Console.WriteLine($"Session active: {(activeSession != null ? $"ID: {activeSession.Id}, Nom: {activeSession.Name}" : "Aucune")}");
+                
+                // Force le rafraîchissement de l'interface
+                StateHasChanged();
+            }
+            else
+            {
+                Console.WriteLine("L'activation de la session a échoué");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de l'activation de la session: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+    }
+}
+    </ChildContent>
+</AuthorizeView>
