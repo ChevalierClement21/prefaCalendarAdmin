@@ -6,6 +6,8 @@
 @inject ISessionStatsService SessionStatsService
 @inject IJSRuntime JSRuntime
 
+<link href="css/components/dashboard.css" rel="stylesheet" />
+
 <AuthorizeView>
     <div class="dashboard-container">
 
@@ -19,31 +21,38 @@
         }
         else
         {
-            <div class="session-selectors">
-                <div class="session-selector primary">
-                    <label>Session principale: </label>
-                    <select class="form-select" @bind="selectedSessionId" @bind:event="onchange" @bind:after="OnSessionSelectedAsync">
-                        @foreach (var session in sessions)
-                        {
-                            <option value="@session.Id">@session.Name (@session.Year)</option>
-                        }
-                    </select>
+            <div class="session-selectors-container">
+                <div class="session-row">
+                    <div class="session-label">Session principale:</div>
+                    <div class="session-input">
+                        <select id="mainSession" class="form-select" @bind="selectedSessionId" @bind:event="onchange" @bind:after="OnSessionSelectedAsync">
+                            @foreach (var session in sessions)
+                            {
+                                <option value="@session.Id">@session.Name (@session.Year)</option>
+                            }
+                        </select>
+                    </div>
                 </div>
                 
-                <div class="comparison-options">
-                    <div class="comparison-toggle">
-                        <input type="checkbox" id="enableComparison" 
-                               @bind="comparisonEnabled" 
-                               @bind:event="onchange" 
-                               @bind:after="OnToggleComparisonAsync" />
-                        <label for="enableComparison">Activer la comparaison</label>
+                <div class="session-row checkbox-row">
+                    <div class="session-label"></div>
+                    <div class="session-input">
+                        <label for="enableComparison" class="checkbox-label">
+                            <input type="checkbox" id="enableComparison" 
+                                   @bind="comparisonEnabled" 
+                                   @bind:event="onchange" 
+                                   @bind:after="OnToggleComparisonAsync" />
+                            Activer la comparaison
+                        </label>
                     </div>
-                    
-                    @if (comparisonEnabled)
-                    {
-                        <div class="session-selector comparison">
-                            <label>Session de comparaison: </label>
-                            <select class="form-select" @bind="comparisonSessionId" @bind:event="onchange" @bind:after="OnComparisonSessionSelectedAsync"
+                </div>
+                
+                @if (comparisonEnabled)
+                {
+                    <div class="session-row">
+                        <div class="session-label">Session de comparaison:</div>
+                        <div class="session-input">
+                            <select id="comparisonSession" class="form-select" @bind="comparisonSessionId" @bind:event="onchange" @bind:after="OnComparisonSessionSelectedAsync"
                                     disabled="@(!comparisonEnabled)">
                                 @foreach (var session in sessions.Where(s => s.Id != selectedSessionId))
                                 {
@@ -51,8 +60,8 @@
                                 }
                             </select>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
             </div>
 
             <div class="total-amount @(comparisonEnabled ? "with-comparison" : "")">
@@ -166,222 +175,7 @@
     </div>
 </AuthorizeView>
 
-<style>
-    .dashboard-container {
-        padding: 20px;
-    }
 
-    h1.text-danger {
-        margin-bottom: 30px;
-        font-size: 48px;
-        text-align: center;
-    }
-
-    .loading, .error {
-        text-align: center;
-        margin: 30px 0;
-        font-size: 18px;
-    }
-
-    .error {
-        color: red;
-    }
-
-    .session-selectors {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        margin-bottom: 30px;
-        align-items: flex-start;
-    }
-
-    .session-selector {
-        flex: 1;
-        min-width: 250px;
-        max-width: 400px;
-    }
-
-    .comparison-options {
-        flex: 1;
-        min-width: 250px;
-        max-width: 400px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .comparison-toggle {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 10px;
-    }
-
-    .total-amount {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 30px;
-        text-align: center;
-    }
-
-    .total-amount.with-comparison {
-        display: flex;
-        justify-content: space-around;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
-
-    .main-stats, .comparison-stats {
-        flex: 1;
-        min-width: 250px;
-    }
-
-    .comparison-stats {
-        padding-top: 10px;
-        border-top: 1px solid #dee2e6;
-    }
-
-    .comparison-stats h3 {
-        margin-bottom: 10px;
-        font-size: 18px;
-        color: #6c757d;
-    }
-
-    .comparison-diff {
-        margin-top: 15px;
-        padding-top: 10px;
-        border-top: 1px dashed #dee2e6;
-        background-color: #f8f9fa;
-        border-radius: 6px;
-        padding: 10px;
-    }
-
-    .diff-amount, .diff-calendars, .amount-diff, .calendars-diff {
-        font-size: 16px;
-        font-weight: bold;
-        margin: 5px 0;
-    }
-
-    .positive {
-        color: #28a745;
-        font-weight: bold;
-    }
-
-    .negative {
-        color: #dc3545;
-        font-weight: bold;
-    }
-
-    .total-amount h2 {
-        margin-bottom: 15px;
-        font-size: 24px;
-    }
-
-    .amount {
-        font-size: 36px;
-        font-weight: bold;
-        color: #28a745;
-    }
-    
-    .calendars-sold {
-        font-size: 18px;
-        color: #6c757d;
-        margin-top: 5px;
-    }
-
-    .sectors-container h2 {
-        margin-bottom: 20px;
-        font-size: 24px;
-    }
-
-    .sectors-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-    }
-
-    .sector-card {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .sector-card.with-comparison {
-        padding-bottom: 15px;
-    }
-
-    .sector-card h4 {
-        font-size: 16px;
-        color: #6c757d;
-        margin: 15px 0 10px;
-    }
-
-    .sector-comparison {
-        margin-top: auto;
-        padding-top: 10px;
-        border-top: 1px dashed #dee2e6;
-    }
-
-    .comparison-values {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    .comparison-only {
-        background-color: #f8f9fa;
-        border: 1px dashed #dee2e6;
-    }
-    
-    .comparison-only h3 {
-        color: #007bff;
-    }
-
-    .comparison-only-text {
-        font-size: 15px;
-        color: #007bff;
-        font-style: italic;
-        font-weight: 500;
-        margin-bottom: 15px;
-    }
-
-    /* Règles pour mobile */
-    .total-amount.with-comparison-mobile {
-        flex-direction: column;
-    }
-
-    .session-selectors-mobile {
-        flex-direction: column;
-    }
-
-    .session-selector-mobile, .comparison-options-mobile {
-        max-width: 100%;
-    }
-
-    /* Appliquer les styles basés sur la taille de l'écran via JavaScript */
-    /* Les classes seront ajoutées/supprimées côté client */
-
-    .sector-card h3 {
-        margin-bottom: 10px;
-        font-size: 20px;
-    }
-
-    .sector-amount {
-        font-size: 24px;
-        font-weight: bold;
-        color: #007bff;
-        margin-bottom: 10px;
-    }
-
-    .sector-details {
-        color: #6c757d;
-    }
-</style>
 
 @code {
     private bool isLoading = true;
@@ -394,13 +188,13 @@
     private bool comparisonEnabled = false;
     private int comparisonSessionId = 0;
     private SessionStats? comparisonStats = null;
-
+    
     // JavaScript interop pour gérer les classes CSS responsives
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Injecter le code JavaScript qui s'exécute côté client pour gérer les classes CSS responsives
+            // Appliquer les styles responsifs
             await JSRuntime.InvokeVoidAsync("applyResponsiveClasses");
         }
     }

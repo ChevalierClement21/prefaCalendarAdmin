@@ -9,26 +9,35 @@ main {
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background-image: linear-gradient(180deg, #283593 0%, #1a237e 100%);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background-color: #ffffff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
     align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 0 1.5rem;
+    transition: all 0.3s ease;
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         white-space: nowrap;
         margin-left: 1.5rem;
         text-decoration: none;
+        color: #1a237e;
+        font-weight: 500;
+        transition: color 0.2s ease, transform 0.2s ease;
     }
 
         .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-            text-decoration: underline;
+            text-decoration: none;
+            color: #3949ab;
+            transform: translateY(-1px);
         }
 
         .top-row ::deep a:first-child {
@@ -44,6 +53,37 @@ main {
         .top-row ::deep a, .top-row ::deep .btn-link {
             margin-left: 0;
         }
+}
+
+.app-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1a237e;
+    letter-spacing: 0.5px;
+}
+
+.user-name {
+    font-weight: 500;
+    color: #455a64;
+}
+
+.logout-btn {
+    background-color: #ffffff;
+    color: #f44336;
+    border: 1px solid #f44336;
+    border-radius: 4px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+    background-color: #f44336;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
 @media (min-width: 641px) {
