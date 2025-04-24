@@ -51,3 +51,25 @@ window.applyResponsiveClasses = function () {
     // Ajouter un écouteur d'événement pour le redimensionnement de la fenêtre
     window.addEventListener('resize', handleResize);
 }
+
+// Fonction pour obtenir la largeur de l'écran
+window.getScreenWidth = function() {
+    return window.innerWidth;
+}
+
+// Fonction pour configurer l'écouteur de redimensionnement
+let dotNetReference = null;
+
+window.setupResizeListener = function() {
+    // Détecter l'instance Blazor
+    dotNetReference = DotNet.invokeMethod('prefaCalendarAdmin', 'GetCurrentInstance');
+    
+    // Ajouter un écouteur d'événement pour le redimensionnement
+    window.addEventListener('resize', handleResizeWithDotNet);
+}
+
+function handleResizeWithDotNet() {
+    if (dotNetReference) {
+        dotNetReference.invokeMethodAsync('UpdateScreenWidth', window.innerWidth);
+    }
+}
