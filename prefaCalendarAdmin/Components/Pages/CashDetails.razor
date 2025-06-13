@@ -1,0 +1,544 @@
+@page "/cash-details"
+@page "/cash-details/{SessionId:int}"
+@using prefaCalendarAdmin.Models.Cash
+@using prefaCalendarAdmin.Services
+@using prefaCalendarAdmin.Models.Session
+@inject ICashService CashService
+@inject ISessionService SessionService
+@inject NavigationManager Navigation
+
+<PageTitle>Détails de la Caisse</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-cash-register me-2"></i>
+                        Détails de la Caisse
+                    </h3>
+                    <div class="d-flex gap-2">
+                        @if (sessions != null && sessions.Any())
+                        {
+                            <select class="form-select" style="width: auto;" @onchange="OnSessionChanged">
+                                <option value="">Toutes les sessions</option>
+                                @foreach (var session in sessions)
+                                {
+                                    <option value="@session.Id" selected="@(session.Id == CurrentSessionId)">
+                                        @session.Name
+                                    </option>
+                                }
+                            </select>
+                        }
+                        <button class="btn btn-outline-primary" @onclick="RefreshData">
+                            <i class="fas fa-refresh me-1"></i>
+                            Actualiser
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-3">Chargement des données...</p>
+                        </div>
+                    }
+                    else if (cashSummary != null)
+                    {
+                        <!-- Résumé global -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="card-title">Montant Total</h6>
+                                                <h4 class="mb-0">@cashSummary.TotalAmount.ToString("C")</h4>
+                                            </div>
+                                            <i class="fas fa-euro-sign fa-2x opacity-50"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="card-title">Calendriers Vendus</h6>
+                                                <h4 class="mb-0">@cashSummary.TotalCalendarsSold</h4>
+                                            </div>
+                                            <i class="fas fa-calendar fa-2x opacity-50"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="card-title">Nombre de Chèques</h6>
+                                                <h4 class="mb-0">@cashSummary.TotalCheckCount</h4>
+                                            </div>
+                                            <i class="fas fa-money-check fa-2x opacity-50"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="card-title">Tournées</h6>
+                                                <h4 class="mb-0">@cashSummary.Tours.Count</h4>
+                                            </div>
+                                            <i class="fas fa-route fa-2x opacity-50"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Répartition par type de monnaie -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-money-bill me-2"></i>
+                                            Billets
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <strong>Total: @cashSummary.TotalBanknotes.ToString("C")</strong>
+                                            <span class="text-muted">(@cashSummary.BanknotesStats.GetTotalCount() billets)</span>
+                                        </div>
+                                        <div class="row text-sm">
+                                            <div class="col-6">500€: @cashSummary.BanknotesStats.Total500</div>
+                                            <div class="col-6">200€: @cashSummary.BanknotesStats.Total200</div>
+                                            <div class="col-6">100€: @cashSummary.BanknotesStats.Total100</div>
+                                            <div class="col-6">50€: @cashSummary.BanknotesStats.Total50</div>
+                                            <div class="col-6">20€: @cashSummary.BanknotesStats.Total20</div>
+                                            <div class="col-6">10€: @cashSummary.BanknotesStats.Total10</div>
+                                            <div class="col-6">5€: @cashSummary.BanknotesStats.Total5</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-coins me-2"></i>
+                                            Pièces
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <strong>Total: @cashSummary.TotalCoins.ToString("C")</strong>
+                                            <span class="text-muted">(@cashSummary.CoinsStats.GetTotalCount() pièces)</span>
+                                        </div>
+                                        <div class="row text-sm">
+                                            <div class="col-6">2€: @cashSummary.CoinsStats.Total2e</div>
+                                            <div class="col-6">1€: @cashSummary.CoinsStats.Total1e</div>
+                                            <div class="col-6">50c: @cashSummary.CoinsStats.Total50c</div>
+                                            <div class="col-6">20c: @cashSummary.CoinsStats.Total20c</div>
+                                            <div class="col-6">10c: @cashSummary.CoinsStats.Total10c</div>
+                                            <div class="col-6">5c: @cashSummary.CoinsStats.Total5c</div>
+                                            <div class="col-6">2c: @cashSummary.CoinsStats.Total2c</div>
+                                            <div class="col-6">1c: @cashSummary.CoinsStats.Total1c</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-money-check me-2"></i>
+                                            Chèques
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <strong>Total: @cashSummary.TotalCheckAmount.ToString("C")</strong>
+                                            <span class="text-muted">(@cashSummary.TotalCheckCount chèques)</span>
+                                        </div>
+                                        @if (cashSummary.TotalCheckCount > 0)
+                                        {
+                                            <div class="text-sm">
+                                                Montant moyen: @((cashSummary.TotalCheckAmount / cashSummary.TotalCheckCount).ToString("C"))
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Détails par tournée -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">
+                                    <i class="fas fa-list me-2"></i>
+                                    Détails par Tournée
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if (cashSummary.Tours.Any())
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Tournée</th>
+                                                    <th>Secteur</th>
+                                                    <th>Calendriers</th>
+                                                    <th>Billets</th>
+                                                    <th>Pièces</th>
+                                                    <th>Chèques</th>
+                                                    <th>Total</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var tour in cashSummary.Tours)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <strong>@tour.TourName</strong>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-secondary">@tour.SectorName</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-success">@tour.CalendarsSold</span>
+                                                        </td>
+                                                        <td>
+                                                            @tour.BanknotesTotal.ToString("C")
+                                                            <small class="text-muted d-block">(@tour.Banknotes.GetTotalCount())</small>
+                                                        </td>
+                                                        <td>
+                                                            @tour.CoinsTotal.ToString("C")
+                                                            <small class="text-muted d-block">(@tour.Coins.GetTotalCount())</small>
+                                                        </td>
+                                                        <td>
+                                                            @tour.ChecksTotal.ToString("C")
+                                                            <small class="text-muted d-block">(@tour.Checks.CheckCount)</small>
+                                                        </td>
+                                                        <td>
+                                                            <strong class="text-primary">@tour.TotalAmount.ToString("C")</strong>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-sm btn-outline-info" @onclick="() => ShowTourDetails(tour)">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Aucune tournée trouvée pour cette session.</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                            <p class="text-muted">Aucune donnée disponible.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour les détails d'une tournée -->
+@if (selectedTour != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-route me-2"></i>
+                        Détails - @selectedTour.TourName
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseTourDetails"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Secteur:</strong> @selectedTour.SectorName
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Session:</strong> @selectedTour.SessionName
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <strong>Calendriers vendus:</strong> @selectedTour.CalendarsSold
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Montant total:</strong> @selectedTour.TotalAmount.ToString("C")
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Détail des billets -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title">Billets - @selectedTour.BanknotesTotal.ToString("C")</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            @if (selectedTour.Banknotes.Tickets500 > 0)
+                                            {
+                                                <tr><td>500€</td><td>@selectedTour.Banknotes.Tickets500</td><td>@((selectedTour.Banknotes.Tickets500 * 500).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Banknotes.Tickets200 > 0)
+                                            {
+                                                <tr><td>200€</td><td>@selectedTour.Banknotes.Tickets200</td><td>@((selectedTour.Banknotes.Tickets200 * 200).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Banknotes.Tickets100 > 0)
+                                            {
+                                                <tr><td>100€</td><td>@selectedTour.Banknotes.Tickets100</td><td>@((selectedTour.Banknotes.Tickets100 * 100).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Banknotes.Tickets50 > 0)
+                                            {
+                                                <tr><td>50€</td><td>@selectedTour.Banknotes.Tickets50</td><td>@((selectedTour.Banknotes.Tickets50 * 50).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Banknotes.Tickets20 > 0)
+                                            {
+                                                <tr><td>20€</td><td>@selectedTour.Banknotes.Tickets20</td><td>@((selectedTour.Banknotes.Tickets20 * 20).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Banknotes.Tickets10 > 0)
+                                            {
+                                                <tr><td>10€</td><td>@selectedTour.Banknotes.Tickets10</td><td>@((selectedTour.Banknotes.Tickets10 * 10).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Banknotes.Tickets5 > 0)
+                                            {
+                                                <tr><td>5€</td><td>@selectedTour.Banknotes.Tickets5</td><td>@((selectedTour.Banknotes.Tickets5 * 5).ToString("C"))</td></tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Détail des pièces -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title">Pièces - @selectedTour.CoinsTotal.ToString("C")</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            @if (selectedTour.Coins.Coins2e > 0)
+                                            {
+                                                <tr><td>2€</td><td>@selectedTour.Coins.Coins2e</td><td>@((selectedTour.Coins.Coins2e * 2.00m).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Coins.Coins1e > 0)
+                                            {
+                                                <tr><td>1€</td><td>@selectedTour.Coins.Coins1e</td><td>@((selectedTour.Coins.Coins1e * 1.00m).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Coins.Coins50c > 0)
+                                            {
+                                                <tr><td>50c</td><td>@selectedTour.Coins.Coins50c</td><td>@((selectedTour.Coins.Coins50c * 0.50m).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Coins.Coins20c > 0)
+                                            {
+                                                <tr><td>20c</td><td>@selectedTour.Coins.Coins20c</td><td>@((selectedTour.Coins.Coins20c * 0.20m).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Coins.Coins10c > 0)
+                                            {
+                                                <tr><td>10c</td><td>@selectedTour.Coins.Coins10c</td><td>@((selectedTour.Coins.Coins10c * 0.10m).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Coins.Coins5c > 0)
+                                            {
+                                                <tr><td>5c</td><td>@selectedTour.Coins.Coins5c</td><td>@((selectedTour.Coins.Coins5c * 0.05m).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Coins.Coins2c > 0)
+                                            {
+                                                <tr><td>2c</td><td>@selectedTour.Coins.Coins2c</td><td>@((selectedTour.Coins.Coins2c * 0.02m).ToString("C"))</td></tr>
+                                            }
+                                            @if (selectedTour.Coins.Coins1c > 0)
+                                            {
+                                                <tr><td>1c</td><td>@selectedTour.Coins.Coins1c</td><td>@((selectedTour.Coins.Coins1c * 0.01m).ToString("C"))</td></tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Détail des chèques -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title">Chèques - @selectedTour.ChecksTotal.ToString("C")</h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (selectedTour.Checks.CheckCount > 0)
+                                    {
+                                        <p><strong>Nombre:</strong> @selectedTour.Checks.CheckCount</p>
+                                        <p><strong>Total:</strong> @selectedTour.Checks.CheckTotalAmount.ToString("C")</p>
+                                        
+                                        @if (selectedTour.Checks.CheckAmounts.Any())
+                                        {
+                                            <h6>Détail des montants:</h6>
+                                            <div class="list-group">
+                                                @foreach (var amount in selectedTour.Checks.CheckAmounts)
+                                                {
+                                                    <div class="list-group-item d-flex justify-content-between">
+                                                        <span>Chèque</span>
+                                                        <span>@amount.ToString("C")</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted">Aucun chèque</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(selectedTour.Notes))
+                    {
+                        <div class="mt-3">
+                            <h6>Notes:</h6>
+                            <div class="alert alert-info">
+                                @selectedTour.Notes
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseTourDetails">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int? SessionId { get; set; }
+
+    private DetailedCashView? cashSummary;
+    private List<CalendarSession>? sessions;
+    private TourCompletion? selectedTour;
+    private bool isLoading = true;
+    private int? CurrentSessionId => SessionId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSessions();
+        await LoadData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SessionId.HasValue)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task LoadSessions()
+    {
+        try
+        {
+            sessions = (await SessionService.GetAllSessionsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des sessions: {ex.Message}");
+            sessions = new List<CalendarSession>();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            if (SessionId.HasValue)
+            {
+                cashSummary = await CashService.GetSessionCashSummaryAsync(SessionId.Value);
+            }
+            else
+            {
+                // Charger toutes les sessions si aucune n'est spécifiée
+                var allSummaries = await CashService.GetAllSessionsCashSummaryAsync();
+                
+                // Créer un résumé combiné
+                cashSummary = new DetailedCashView
+                {
+                    SessionId = 0,
+                    SessionName = "Toutes les sessions",
+                    Tours = allSummaries.SelectMany(s => s.Tours).ToList()
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des données: {ex.Message}");
+            cashSummary = new DetailedCashView();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OnSessionChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int sessionId))
+        {
+            Navigation.NavigateTo($"/cash-details/{sessionId}");
+        }
+        else
+        {
+            Navigation.NavigateTo("/cash-details");
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadData();
+    }
+
+    private void ShowTourDetails(TourCompletion tour)
+    {
+        selectedTour = tour;
+    }
+
+    private void CloseTourDetails()
+    {
+        selectedTour = null;
+    }
+}
