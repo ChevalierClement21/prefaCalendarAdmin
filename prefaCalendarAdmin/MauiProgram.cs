@@ -33,6 +33,7 @@ public static class MauiProgram
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<ISessionService, SessionService>();
         builder.Services.AddScoped<ISessionStatsService, SessionStatsService>();
+        builder.Services.AddScoped<ICashService, CashService>();
 
 #if DEBUG
         builder.Services.AddBlazorWebViewDeveloperTools();
